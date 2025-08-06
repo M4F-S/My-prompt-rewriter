@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 interface DecryptedTextProps {
@@ -10,8 +10,6 @@ interface DecryptedTextProps {
   speed?: number;
   trigger?: number; // Changed to number for better trigger detection
 }
-
-const CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
 
 export function DecryptedText({ 
   text, 

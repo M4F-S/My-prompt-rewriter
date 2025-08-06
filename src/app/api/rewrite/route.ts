@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
+
+interface SearchResult {
+  title?: string;
+  snippet?: string;
+  link?: string;
+}
 import axios from 'axios';
 
 // Initialize Groq client with production-ready configuration
@@ -70,7 +76,7 @@ function validateTokenLimits(systemInstructions: string, userMessage: string, we
 }
 
 // Retry logic with exponential backoff for production resilience
-async function callGroqWithRetry(messages: any[], temperature: number, maxTokens: number, retries = 3): Promise<any> {
+async function callGroqWithRetry(messages: Array<{ role: 'system' | 'user'; content: string }>, temperature: number, maxTokens: number, retries = 3): Promise<{ choices: Array<{ message?: { content?: string | null } }> }> {
   const delays = [1000, 2000, 4000]; // 1s, 2s, 4s exponential backoff
   
   for (let attempt = 0; attempt < retries; attempt++) {
@@ -100,18 +106,19 @@ async function callGroqWithRetry(messages: any[], temperature: number, maxTokens
       
       return completion;
       
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorObj = error as { status?: number; message?: string; code?: string; type?: string };
       const isLastAttempt = attempt === retries - 1;
       
       console.error(`❌ Groq API Error (Attempt ${attempt + 1}/${retries}):`, {
-        status: error.status,
-        code: error.code,
-        message: error.message,
-        type: error.type,
+        status: errorObj.status,
+        code: errorObj.code,
+        message: errorObj.message,
+        type: errorObj.type,
       });
       
       // Handle specific error types with appropriate delays
-      if (error.status === 429) { // Rate limit
+      if (errorObj.status === 429) { // Rate limit
         if (!isLastAttempt) {
           const delay = delays[attempt] * 2; // Double delay for rate limits
           console.log(`⏳ Rate limited. Waiting ${delay}ms before retry...`);
@@ -120,12 +127,12 @@ async function callGroqWithRetry(messages: any[], temperature: number, maxTokens
         }
         throw new Error(ERROR_MESSAGES.RATE_LIMIT);
       }
-      
-      if (error.status === 413) { // Payload too large
+
+      if (errorObj.status === 413) { // Payload too large
         throw new Error(ERROR_MESSAGES.PAYLOAD_TOO_LARGE);
       }
-      
-      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+
+      if (errorObj.code === 'ECONNABORTED' || errorObj.message?.includes('timeout')) {
         if (!isLastAttempt) {
           console.log(`⏳ Timeout. Waiting ${delays[attempt]}ms before retry...`);
           await new Promise(resolve => setTimeout(resolve, delays[attempt]));
@@ -134,11 +141,11 @@ async function callGroqWithRetry(messages: any[], temperature: number, maxTokens
         throw new Error(ERROR_MESSAGES.NETWORK_TIMEOUT);
       }
       
-      if (error.status === 401 || error.status === 403) {
+      if (errorObj.status === 401 || errorObj.status === 403) {
         throw new Error(ERROR_MESSAGES.INVALID_API_KEY);
       }
-      
-      if (error.status >= 500) {
+
+      if (errorObj.status && errorObj.status >= 500) {
         if (!isLastAttempt) {
           console.log(`⏳ Server error. Waiting ${delays[attempt]}ms before retry...`);
           await new Promise(resolve => setTimeout(resolve, delays[attempt]));
@@ -156,6 +163,9 @@ async function callGroqWithRetry(messages: any[], temperature: number, maxTokens
       await new Promise(resolve => setTimeout(resolve, delays[attempt]));
     }
   }
+
+  // This should never be reached, but TypeScript requires it
+  throw new Error(ERROR_MESSAGES.GENERIC_ERROR);
 }
 
 // System instructions remain the same but with enhanced quality expectations
@@ -450,17 +460,17 @@ async function performWebSearch(userPrompt: string): Promise<{ data: string; sou
     }
 
     // Extract relevant information
-    const searchData = results.map((result: any) => ({
+    const searchData = results.map((result: SearchResult) => ({
       title: result.title || '',
       snippet: result.snippet || '',
       link: result.link || ''
-    })).filter((item: any) => item.title && item.snippet);
+    })).filter((item: { title: string; snippet: string; link: string }) => item.title && item.snippet);
 
-    const data = searchData.map((item: any) => 
+    const data = searchData.map((item: { title: string; snippet: string; link: string }) =>
       `${item.title}: ${item.snippet}`
     ).join('\n\n');
 
-    const sources = searchData.map((item: any) => item.link);
+    const sources = searchData.map((item: { title: string; snippet: string; link: string }) => item.link);
 
     return { data, sources };
   } catch (error) {
@@ -627,17 +637,18 @@ export async function POST(request: NextRequest) {
       webSources
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorObj = error as { message?: string; stack?: string; status?: number };
     console.error('❌ API Error:', {
-      message: error.message,
-      stack: error.stack,
-      status: error.status,
+      message: errorObj.message,
+      stack: errorObj.stack,
+      status: errorObj.status,
     });
-    
+
     // Return user-friendly error message
     return NextResponse.json(
-      { error: error.message || ERROR_MESSAGES.GENERIC_ERROR },
-      { status: error.status || 500 }
+      { error: errorObj.message || ERROR_MESSAGES.GENERIC_ERROR },
+      { status: errorObj.status || 500 }
     );
   }
 }

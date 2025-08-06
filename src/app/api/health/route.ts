@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 
 // Health check endpoint for production monitoring
-export async function GET(request: NextRequest) {
+export async function GET() {
   const startTime = Date.now();
   
   try {
@@ -30,8 +30,9 @@ export async function GET(request: NextRequest) {
         });
         groqLatency = Date.now() - testStart;
         groqStatus = 'healthy';
-      } catch (error: any) {
-        groqStatus = error.status === 429 ? 'rate_limited' : 'error';
+      } catch (error: unknown) {
+        const errorObj = error as { status?: number; message?: string };
+        groqStatus = errorObj.status === 429 ? 'rate_limited' : 'error';
         groqLatency = Date.now() - startTime;
       }
     } else {
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest) {
       },
     });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Health check failed:', error);
     
     return NextResponse.json({

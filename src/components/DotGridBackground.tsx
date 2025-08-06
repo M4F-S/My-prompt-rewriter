@@ -25,7 +25,7 @@ interface DotProps {
 const InteractiveDot = memo(({ x, y, size, index, enableAnimation, enableHoverEffects, spacing }: DotProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleMouseEnter = useCallback(() => {
     if (!enableHoverEffects) return;

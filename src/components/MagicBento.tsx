@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ReactNode, useState, useMemo, useEffect } from 'react';
+import { ReactNode, useState, useMemo, useEffect, useRef } from 'react';
 
 interface BentoCardProps {
   children: ReactNode;
