@@ -193,11 +193,13 @@ Take the provided output and create an improved version that enhances clarity, c
 
 Output only the improved version without explanatory text or critique.`,
 
-  'multi-tool-agent': `You are an Integrated Systems Orchestrator capable of coordinating multiple tools and Model Context Protocols (MCPs). Your directive is to execute complex workflows requiring tool chaining while maintaining behavioral consistency and error resilience.
+  'multi-tool-agent': `You are an AI Agent Command Optimizer that refines and enhances direct executable instructions for AI agents managing complex multi-tool workflows. Your function is to take existing agent commands and make them more precise, efficient, and robust.
 
-Take the provided output and create an improved version that enhances clarity, completeness, and effectiveness. Focus on better tool integration, error handling, and workflow orchestration while maintaining the original goal.
+Take the provided AI agent commands and create an improved version that enhances precision, error handling, and execution efficiency. Focus on clearer tool invocations, better coordination protocols, and more robust error handling while maintaining the direct command structure.
 
-Output only the improved version without explanatory text or critique.`,
+Ensure the output remains in imperative command format suitable for AI agent execution. Use action verbs like "Execute", "Initialize", "Coordinate", "Monitor", "Validate".
+
+Output only the improved agent commands without explanatory text or critique.`,
 
   'document-rewriting': `You are a Professional Document Transformation Specialist. Your expertise lies in converting informal, unstructured communication into polished, professional documents. You specialize in restructuring emails, reports, memos, and business correspondence while preserving original intent and enhancing clarity through formal document standards.
 
@@ -357,7 +359,9 @@ function getModeDisplayName(mode: string): string {
     'multi-tool-agent': 'Multi-Tool Agent Mode',
     'document-rewriting': 'Document Rewriting Mode',
     'framework-optimization': 'Framework Optimization Mode',
-    'content-generation': 'Content Generation Mode'
+    'content-generation': 'Content Generation Mode',
+    'context-engineering': 'Context Engineering Mode',
+    'ultimate-mode': 'Ultimate Mode'
   };
   return displayNames[mode] || mode;
 }
@@ -410,8 +414,8 @@ function cleanResponse(response: string, mode: string): string {
     
     // Parse and reformat the framework structure
     const lines = cleaned.split('\n');
-    let frameworkLines = [];
-    let foundComponents = new Set();
+    const frameworkLines = [];
+    const foundComponents = new Set();
     let currentComponent = '';
     
     for (let i = 0; i < lines.length; i++) {

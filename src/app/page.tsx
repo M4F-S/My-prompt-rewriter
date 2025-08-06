@@ -3,7 +3,7 @@
 import React from 'react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MagicBento, BentoCard, SplitText } from '@/components/MagicBento';
+import { MagicBento, BentoCard } from '@/components/MagicBento';
 import { FuturisticButton } from '@/components/FuturisticButton';
 import { DecryptedText } from '@/components/DecryptedText';
 
@@ -15,7 +15,9 @@ const MODE_DESCRIPTIONS = {
   'multi-tool-agent': 'Complex workflow orchestration with tool chaining, error recovery, and audit logging.',
   'document-rewriting': 'Professional document transformation - converts informal text into polished, grammatically correct content with improved structure and sequential order.',
   'content-generation': 'Creative content creation including articles, blogs, marketing copy, and storytelling.',
-  'framework-optimization': 'Advanced prompt engineering using established frameworks (RACE, CRISP, Chain-of-Thought) for maximum clarity and effectiveness.'
+  'framework-optimization': 'Advanced prompt engineering using established frameworks (RACE, CRISP, Chain-of-Thought) for maximum clarity and effectiveness.',
+  'context-engineering': 'Advanced context optimization and information orchestration with sophisticated context analysis, compression, and strategic positioning for maximum AI effectiveness.',
+  'ultimate-mode': 'The pinnacle of prompt engineering - combines structured 6-part framework methodology with advanced context engineering principles for maximum sophistication and effectiveness.'
 };
 
 // Optimized Particle background component with reduced particles
@@ -80,11 +82,131 @@ export default function Home() {
   const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'auto'>('dark');
   const [autoThemeActive, setAutoThemeActive] = useState(false);
 
+  // Spell check state
+  const [spellCheckResults, setSpellCheckResults] = useState<string[]>([]);
+  const [showSpellCheck, setShowSpellCheck] = useState(false);
+
   // Memoize content mode calculation
-  const isContentMode = useMemo(() => 
+  const isContentMode = useMemo(() =>
     selectedMode === 'content-generation' || selectedMode === 'document-rewriting',
     [selectedMode]
   );
+
+  // Enhanced spell check function that actually corrects the text
+  const performSpellCheck = useCallback(() => {
+    if (!userPrompt.trim()) {
+      setSpellCheckResults(['No text to check']);
+      setShowSpellCheck(true);
+      return;
+    }
+
+    // Comprehensive spell check using common misspellings
+    const commonMisspellings: { [key: string]: string } = {
+      // Common letter swaps and typos
+      'teh': 'the',
+      'hte': 'the',
+      'adn': 'and',
+      'si': 'is',
+      'fo': 'of',
+      'ot': 'to',
+      'taht': 'that',
+      'thsi': 'this',
+      'jsut': 'just',
+      'cna': 'can',
+      'woudl': 'would',
+      'shoudl': 'should',
+      'coudl': 'could',
+      'whcih': 'which',
+      'wich': 'which',
+      'waht': 'what',
+      'wnat': 'want',
+      'dont': "don't",
+      'wont': "won't",
+      'cant': "can't",
+      'isnt': "isn't",
+      'wasnt': "wasn't",
+      'werent': "weren't",
+      'didnt': "didn't",
+      'doesnt': "doesn't",
+      'hasnt': "hasn't",
+      'havent': "haven't",
+      'shouldnt': "shouldn't",
+      'wouldnt': "wouldn't",
+      'couldnt': "couldn't",
+
+      // Common spelling mistakes
+      'recieve': 'receive',
+      'seperate': 'separate',
+      'definately': 'definitely',
+      'occured': 'occurred',
+      'neccessary': 'necessary',
+      'accomodate': 'accommodate',
+      'beleive': 'believe',
+      'acheive': 'achieve',
+      'wierd': 'weird',
+      'freind': 'friend',
+      'thier': 'their',
+      'youre': "you're",
+      'its': "it's",
+      'loose': 'lose',
+      'affect': 'effect',
+      'then': 'than',
+      'alot': 'a lot',
+      'allot': 'a lot',
+      'becuase': 'because',
+      'becasue': 'because',
+      'beacuse': 'because',
+      'begining': 'beginning',
+      'comming': 'coming',
+      'goverment': 'government',
+      'enviroment': 'environment',
+      'managment': 'management',
+      'developement': 'development',
+      'arguement': 'argument',
+      'judgement': 'judgment',
+      'occassion': 'occasion',
+      'embarass': 'embarrass',
+      'harrass': 'harass',
+      'mispell': 'misspell',
+      'untill': 'until',
+      'sucessful': 'successful',
+      'sucessfully': 'successfully',
+      'tommorow': 'tomorrow',
+      'tommorrow': 'tomorrow'
+    };
+
+    let correctedText = userPrompt;
+    let correctionsCount = 0;
+    const corrections: string[] = [];
+
+    // Process each word and apply corrections using safer string replacement
+    Object.entries(commonMisspellings).forEach(([misspelled, correct]) => {
+      // Use case-insensitive replacement with word boundaries
+      const regex = new RegExp(`\\b${misspelled.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+      const beforeReplace = correctedText;
+      correctedText = correctedText.replace(regex, correct);
+
+      // Check if any replacements were made
+      if (beforeReplace !== correctedText) {
+        corrections.push(`"${misspelled}" → "${correct}"`);
+        correctionsCount++;
+      }
+    });
+
+    // Update the user prompt with corrected text
+    if (correctionsCount > 0) {
+      setUserPrompt(correctedText);
+      setSpellCheckResults([
+        `✅ Applied ${correctionsCount} correction(s):`,
+        ...corrections,
+        '',
+        '📝 Text has been updated in the input field!'
+      ]);
+    } else {
+      setSpellCheckResults(['✅ No common spelling errors found!']);
+    }
+    setShowSpellCheck(true);
+  }, [userPrompt]);
 
   // Memoize mode description
   const currentModeDescription = useMemo(() => 
@@ -422,6 +544,8 @@ export default function Home() {
                 <option value="document-rewriting">📝 Document Rewriting Mode</option>
                 <option value="content-generation">✍️ Content Generation Mode</option>
                 <option value="framework-optimization">🎯 Framework Optimization Mode</option>
+                <option value="context-engineering">🧠 Context Engineering Mode</option>
+                <option value="ultimate-mode">🚀 Ultimate Mode</option>
               </select>
               
               {/* Mode Description with consistent theming */}
@@ -487,21 +611,88 @@ export default function Home() {
                 id="user-prompt"
                 value={userPrompt}
                 onChange={(e) => setUserPrompt(e.target.value)}
-                placeholder={isContentMode ? 
-                  "Enter your content request or text to transform..." : 
+                placeholder={isContentMode ?
+                  "Enter your content request or text to transform..." :
                   "Enter your prompt that needs improvement..."
                 }
                 className="flex-1 min-h-[300px] p-4 rounded-xl border border-cyan-500/30 resize-none focus:outline-none focus:ring-2 focus:ring-cyan-600 dark:focus:ring-cyan-500 focus:border-transparent bg-white/90 dark:bg-black/30 backdrop-blur-xl text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
               />
+
+              {/* Spell Check Section */}
+              <div className="mt-4 flex flex-col gap-3">
+                <button
+                  onClick={performSpellCheck}
+                  disabled={!userPrompt.trim()}
+                  className="self-start px-4 py-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-600 dark:text-purple-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium"
+                >
+                  🔍 Spell Check
+                </button>
+
+                {showSpellCheck && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="p-3 rounded-lg bg-purple-50/50 dark:bg-purple-900/20 border border-purple-200/50 dark:border-purple-700/50"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-purple-700 dark:text-purple-300">Spell Check Results</h4>
+                      <button
+                        onClick={() => setShowSpellCheck(false)}
+                        className="text-purple-500 hover:text-purple-700 dark:hover:text-purple-300 text-sm"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="space-y-1">
+                      {spellCheckResults.map((result, index) => (
+                        <div key={index} className="text-sm text-purple-600 dark:text-purple-400">
+                          {result}
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </div>
             </div>
           </BentoCard>
+
+          {/* Mobile Generate Button - Only visible on mobile between input and output */}
+          <div className="col-span-12 lg:hidden">
+            <div className="flex justify-center py-4">
+              <FuturisticButton
+                onClick={handleRewrite}
+                disabled={isLoading || !userPrompt.trim()}
+                variant="primary"
+                size="lg"
+                className="min-w-[200px] max-w-[300px]"
+              >
+                {isLoading ? (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="inline-block mr-2"
+                  >
+                    ⚡
+                  </motion.div>
+                ) : null}
+                {isLoading ?
+                  (isContentMode ? 'Generating...' : 'Rewriting...') :
+                  (isContentMode ? '🎨 Generate Content' : '✨ Rewrite Prompt')
+                }
+              </FuturisticButton>
+            </div>
+          </div>
 
           {/* Output Card with consistent theming */}
           <BentoCard span="col-span-12 lg:col-span-6" delay={0.3} glowColor="green">
             <div className="p-6 h-full flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold">
-                  {isContentMode ? '🎨 Generated Content' : '✨ Rewritten Prompt'}
+                  {isContentMode ? '🎨 Generated Content' :
+                   selectedMode === 'context-engineering' ? '🧠 Context-Engineered Prompt' :
+                   selectedMode === 'ultimate-mode' ? '🚀 Ultimate Enhanced Prompt' :
+                   '✨ Rewritten Prompt'}
                 </h2>
                 <AnimatePresence>
                   {rewrittenPrompt && (
@@ -539,7 +730,10 @@ export default function Home() {
                       exit={{ opacity: 0 }}
                       className="text-gray-500 dark:text-gray-400 italic text-center mt-20"
                     >
-                      {isContentMode ? '🎨 Generated content will appear here...' : '✨ Rewritten prompt will appear here...'}
+                      {isContentMode ? '🎨 Generated content will appear here...' :
+                       selectedMode === 'context-engineering' ? '🧠 Context-engineered prompt will appear here...' :
+                       selectedMode === 'ultimate-mode' ? '🚀 Ultimate enhanced prompt will appear here...' :
+                       '✨ Rewritten prompt will appear here...'}
                     </motion.p>
                   )}
                 </AnimatePresence>
@@ -547,8 +741,8 @@ export default function Home() {
             </div>
           </BentoCard>
 
-          {/* Action Buttons Card */}
-          <BentoCard span="col-span-12" delay={0.4} glowColor="pink">
+          {/* Action Buttons Card - Hidden on mobile, visible on desktop */}
+          <BentoCard span="col-span-12 hidden lg:block" delay={0.4} glowColor="pink">
             <div className="p-6">
               <div className="flex gap-4 flex-wrap justify-center">
                 <FuturisticButton
@@ -659,6 +853,89 @@ export default function Home() {
             )}
           </AnimatePresence>
         </MagicBento>
+
+        {/* Educational Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 0.6 }}
+          className="mt-16 mb-8"
+        >
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="glass rounded-2xl p-8 border border-cyan-500/20 bg-white/5 dark:bg-black/20 backdrop-blur-xl">
+              <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                Why Choose Different Modes for Different Tasks?
+              </h2>
+
+              <p className="text-gray-700 dark:text-gray-300 text-center mb-8 text-lg leading-relaxed">
+                Our 9 specialized modes are designed to match specific AI agent capabilities and task requirements. Here&apos;s why mode selection matters:
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div className="p-4 rounded-xl bg-white/10 dark:bg-black/20 border border-cyan-500/20">
+                  <div className="text-2xl mb-2">🔬</div>
+                  <h3 className="font-semibold text-cyan-600 dark:text-cyan-400 mb-2">Question/Research Mode</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Optimizes queries for AI research agents that need structured, evidence-based analysis with confidence ratings and source transparency. Use when you need factual investigations.</p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white/10 dark:bg-black/20 border border-green-500/20">
+                  <div className="text-2xl mb-2">📊</div>
+                  <h3 className="font-semibold text-green-600 dark:text-green-400 mb-2">Report Writing Mode</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Creates instructions for AI report writers that produce professional, structured documents with executive summaries and actionable recommendations. Use for business documentation.</p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white/10 dark:bg-black/20 border border-blue-500/20">
+                  <div className="text-2xl mb-2">💻</div>
+                  <h3 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">Coding Agent Mode</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Generates detailed specifications for AI developers that follow best practices, security protocols, and maintainability standards. Use for software development tasks.</p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white/10 dark:bg-black/20 border border-orange-500/20">
+                  <div className="text-2xl mb-2">🔧</div>
+                  <h3 className="font-semibold text-orange-600 dark:text-orange-400 mb-2">Multi-Tool Agent Mode</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Provides complete coordination plans for AI agents managing multiple systems, APIs, and workflows simultaneously. Use for complex, multi-step processes.</p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white/10 dark:bg-black/20 border border-purple-500/20">
+                  <div className="text-2xl mb-2">📝</div>
+                  <h3 className="font-semibold text-purple-600 dark:text-purple-400 mb-2">Document Rewriting Mode</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Delivers directly improved content or creates instructions for AI editors specializing in content transformation and optimization. Use for content enhancement.</p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white/10 dark:bg-black/20 border border-pink-500/20">
+                  <div className="text-2xl mb-2">⚡</div>
+                  <h3 className="font-semibold text-pink-600 dark:text-pink-400 mb-2">Framework Optimization Mode</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Applies systematic methodologies (RACE, CRISP-DM, Design Thinking) through AI agents trained in structured problem-solving. Use for strategic challenges.</p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white/10 dark:bg-black/20 border border-yellow-500/20">
+                  <div className="text-2xl mb-2">🎯</div>
+                  <h3 className="font-semibold text-yellow-600 dark:text-yellow-400 mb-2">Content Generation Mode</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Produces ready-to-publish content through AI content creators specializing in audience engagement and conversion optimization. Use for marketing materials.</p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white/10 dark:bg-black/20 border border-indigo-500/20">
+                  <div className="text-2xl mb-2">🧠</div>
+                  <h3 className="font-semibold text-indigo-600 dark:text-indigo-400 mb-2">Context Engineering Mode</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Applies advanced information orchestration through AI agents optimizing context windows and multi-source data integration. Use for complex information synthesis.</p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white/10 dark:bg-black/20 border border-red-500/20">
+                  <div className="text-2xl mb-2">🚀</div>
+                  <h3 className="font-semibold text-red-600 dark:text-red-400 mb-2">Ultimate Mode</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Combines framework methodology with context engineering for AI agents handling the most sophisticated and comprehensive tasks. Use for maximum effectiveness.</p>
+                </div>
+              </div>
+
+              <div className="text-center p-6 rounded-xl bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/30">
+                <h3 className="text-xl font-semibold mb-3 text-cyan-600 dark:text-cyan-400">The Science Behind Mode Selection</h3>
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                  Different AI models excel at different cognitive tasks. By matching your request to the appropriate specialized mode, you ensure the AI agent receives optimally structured instructions that leverage its specific strengths, resulting in higher quality outputs and better task completion rates.
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

@@ -6,9 +6,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   
   // API route optimizations
-  experimental: {
-    serverComponentsExternalPackages: ['groq-sdk'],
-  },
+  serverExternalPackages: ['groq-sdk'],
   
   // Environment variable validation
   env: {
